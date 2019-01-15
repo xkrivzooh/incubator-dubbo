@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * FailbackRegistry. (SPI, Prototype, ThreadSafe)
- *
+ * FailbackRegistry，从名字就能直观的看出它的作用，主要就是负责注册中心失效重试逻辑的。
  */
 public abstract class FailbackRegistry extends AbstractRegistry {
 
@@ -451,6 +451,12 @@ public abstract class FailbackRegistry extends AbstractRegistry {
 
     // ==== Template method ====
 
+    /**
+     * 这个doRegister才是真正执行注册的方法
+     * ZookeeperRegistry的doRegister方法（FailbackRegistry的register方法会调用ZookeeperRegistry的doRegister的方法，
+     * 这里的doRegister就是一个抽象方法，真正的实现在ZookeeperRegistry中）：
+     * @param url
+     */
     protected abstract void doRegister(URL url);
 
     protected abstract void doUnregister(URL url);

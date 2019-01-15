@@ -38,7 +38,7 @@ import java.util.concurrent.ConcurrentMap;
 
 /**
  * ZookeeperRegistry
- *
+ * 基于zookeeper的注册中心实现
  */
 public class ZookeeperRegistry extends FailbackRegistry {
 
@@ -52,6 +52,8 @@ public class ZookeeperRegistry extends FailbackRegistry {
 
     private final Set<String> anyServices = new ConcurrentHashSet<String>();
 
+    //这个ChildListener接口用于把zkclient的事件（IZkChildListener）转换到registry事件（NotifyListener）
+    //这么做其实就是为了封装，屏蔽注册中心的细节，比较dubbo支持很多注册中心，比如redis
     private final ConcurrentMap<URL, ConcurrentMap<NotifyListener, ChildListener>> zkListeners = new ConcurrentHashMap<URL, ConcurrentMap<NotifyListener, ChildListener>>();
 
     private final ZookeeperClient zkClient;
@@ -108,9 +110,14 @@ public class ZookeeperRegistry extends FailbackRegistry {
         }
     }
 
+    /**
+     * 注册的是临时节点
+     * @param url
+     */
     @Override
     protected void doRegister(URL url) {
         try {
+            //这里的zkClient是被dubbo封装过的对象。
             zkClient.create(toUrlPath(url), url.getParameter(Constants.DYNAMIC_KEY, true));
         } catch (Throwable e) {
             throw new RpcException("Failed to register " + url + " to zookeeper " + getUrl() + ", cause: " + e.getMessage(), e);
@@ -265,6 +272,11 @@ public class ZookeeperRegistry extends FailbackRegistry {
         return paths;
     }
 
+    /**
+     * 把url格式化成最终存储在zookeeper中的数据格式，尤其要注意category参数，它表示注册类型
+     * @param url
+     * @return
+     */
     private String toCategoryPath(URL url) {
         return toServicePath(url) + Constants.PATH_SEPARATOR + url.getParameter(Constants.CATEGORY_KEY, Constants.DEFAULT_CATEGORY);
     }

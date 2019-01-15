@@ -31,6 +31,8 @@ import java.util.Map;
 
 /**
  * InjvmProtocol
+ * 一个例子
+ * injvm://127.0.0.1/com.alibaba.dubbo.demo.bid.BidService?anyhost=true&application=demo-provider&dubbo=2.0.0&generic=false&interface=com.alibaba.dubbo.demo.bid.BidService&methods=throwNPE,bid&optimizer=com.alibaba.dubbo.demo.SerializationOptimizerImpl&organization=dubbox&owner=programmer&pid=3872&serialization=kryo&side=provider&timestamp=1422241023451
  */
 public class InjvmProtocol extends AbstractProtocol implements Protocol {
 
