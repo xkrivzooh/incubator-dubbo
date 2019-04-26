@@ -42,7 +42,23 @@ import java.lang.reflect.Method;
  * <li>unexpected exception will be logged in ERROR level on provider side. Unexpected exception are unchecked
  * exception not declared on the interface</li>
  * <li>Wrap the exception not introduced in API package into RuntimeException. Framework will serialize the outer exception but stringnize its cause in order to avoid of possible serialization problem on client side</li>
- * </ol>
+ * dubbo的异常处理类是com.alibaba.dubbo.rpc.filter.ExceptionFilter 类,源码这里就不贴了.归纳下对异常的处理分为下面几类:
+ *
+ * 1)如果provider实现了GenericService接口,直接抛出
+ *
+ * 2)如果是checked异常，直接抛出
+ *
+ * 3)在方法签名上有声明，直接抛出
+ *
+ * 4)异常类和接口类在同一jar包里，直接抛出
+ *
+ * 5)是JDK自带的异常，直接抛出
+ *
+ * 6)是Dubbo本身的异常，直接抛出
+ *
+ * 7)否则，包装成RuntimeException抛给客户端
+ *
+ * 网上有些文章对7)的处理有疑问,不理解原因,其实就是为了防止客户端反序列化失败.前面几种情况都能保证反序列化正常.
  */
 @Activate(group = Constants.PROVIDER)
 public class ExceptionFilter extends AbstractPostProcessFilter {

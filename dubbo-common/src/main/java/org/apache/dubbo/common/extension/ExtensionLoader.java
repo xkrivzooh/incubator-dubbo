@@ -103,6 +103,11 @@ public class ExtensionLoader<T> {
         return type.isAnnotationPresent(SPI.class);
     }
 
+    /**
+     * 1. dubbo的SPI扩展点必须是接口。
+     * 2. dubbo的SPI扩展点接口必须用@SPI标注。
+     * 3. 某个扩展点的ExtensionLoader是获取的时候延迟生成(也就是用到了才会生成创建)，并且会进行缓存。
+     */
     @SuppressWarnings("unchecked")
     public static <T> ExtensionLoader<T> getExtensionLoader(Class<T> type) {
         if (type == null) {
@@ -303,6 +308,10 @@ public class ExtensionLoader<T> {
     /**
      * Find the extension with the given name. If the specified name is not found, then {@link IllegalStateException}
      * will be thrown.
+     * 1. 扩展点名称不能空，否则抛出异常。
+     * 2. 扩展点名称传入true则表示获取默认扩展点实例。
+     * 3. 扩展点支持缓存，说明扩展点对象在SPI容器中单例的，需要考虑线程安全。
+     * 4. 扩展点对象生成时延迟创建的，实现了对jdk的spi的改进。
      */
     @SuppressWarnings("unchecked")
     public T getExtension(String name) {
@@ -332,6 +341,9 @@ public class ExtensionLoader<T> {
 
     /**
      * Return default extension, return <code>null</code> if it's not configured.
+     * 获得默认的扩展对象，属性cachedDefaultName的值并不是参数传递进来的，
+     * 它是在方法获得扩展类getExtensionClasses()中赋值的。
+     * 如果没有加载到默认的扩展点实现，则返回null。
      */
     public T getDefaultExtension() {
         getExtensionClasses();
@@ -495,6 +507,9 @@ public class ExtensionLoader<T> {
         return new IllegalStateException(buf.toString());
     }
 
+    /**
+     * 给扩展实例执行依赖注入。调用了方法injectExtension，从而实现了对jdk的spi机制的ioc和aop功能扩展。
+     */
     @SuppressWarnings("unchecked")
     private T createExtension(String name) {
         Class<?> clazz = getExtensionClasses().get(name);
@@ -579,6 +594,10 @@ public class ExtensionLoader<T> {
     }
 
     // synchronized in getExtensionClasses
+    /**
+     * 加载META-INF/services/、META-INF/dubbo/internal/、META-INF/dubbo/目录下type.getName文件
+     * 并解析内容，然后将type基本实现类（不包括包装类，没有Adaptive注解）存储在extensionClasse中。
+     */
     private Map<String, Class<?>> loadExtensionClasses() {
         final SPI defaultAnnotation = type.getAnnotation(SPI.class);
         if (defaultAnnotation != null) {
@@ -595,6 +614,7 @@ public class ExtensionLoader<T> {
             }
         }
 
+        //此处目测是为了兼容老旧的dubbo SPI扩展
         Map<String, Class<?>> extensionClasses = new HashMap<String, Class<?>>();
         loadDirectory(extensionClasses, DUBBO_INTERNAL_DIRECTORY, type.getName());
         loadDirectory(extensionClasses, DUBBO_INTERNAL_DIRECTORY, type.getName().replace("org.apache", "com.alibaba"));
@@ -751,6 +771,11 @@ public class ExtensionLoader<T> {
         }
     }
 
+    /**
+     * 因为获取自适应扩展点会触发获取扩展点所有实现类的Class对象。目前
+     * dubbo只有被@Adaptive注解的类仅有AdaptiveCompiler和AdaptiveExtensionFactory，因此除了
+     * Complie和ExtensionFactory外都需要动态创建其自适应扩展点的Class
+     */
     private Class<?> getAdaptiveExtensionClass() {
         getExtensionClasses();
         if (cachedAdaptiveClass != null) {
@@ -759,6 +784,7 @@ public class ExtensionLoader<T> {
         return cachedAdaptiveClass = createAdaptiveExtensionClass();
     }
 
+    // 创建自适应扩展点类Class对象
     private Class<?> createAdaptiveExtensionClass() {
         String code = createAdaptiveExtensionClassCode();
         ClassLoader classLoader = findClassLoader();
